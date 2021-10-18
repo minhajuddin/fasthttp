@@ -1,0 +1,4 @@
+Client
+A unique set of configurations that are defined and used for all requests made with this client id
+
+A client has an Name/Identifier, use app_team_retailer_name convention
