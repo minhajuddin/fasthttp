@@ -1,0 +1,37 @@
+<h1>Listing Clients</h1>
+
+<%= if @live_action in [:new, :edit] do %>
+  <%= live_modal FastHTTPWeb.ClientLive.FormComponent,
+    id: @client.id || :new,
+    title: @page_title,
+    action: @live_action,
+    client: @client,
+    return_to: Routes.client_index_path(@socket, :index) %>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Notes</th>
+
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="clients">
+    <%= for client <- @clients do %>
+      <tr id={"client-#{client.id}"}>
+        <td><%= client.name %></td>
+        <td><%= client.notes %></td>
+
+        <td>
+          <span><%= live_redirect "Show", to: Routes.client_show_path(@socket, :show, client) %></span>
+          <span><%= live_patch "Edit", to: Routes.client_index_path(@socket, :edit, client) %></span>
+          <span><%= link "Delete", to: "#", phx_click: "delete", phx_value_id: client.id, data: [confirm: "Are you sure?"] %></span>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<span><%= live_patch "New Client", to: Routes.client_index_path(@socket, :new) %></span>

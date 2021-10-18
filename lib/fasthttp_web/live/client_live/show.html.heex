@@ -1,0 +1,27 @@
+<h1>Show Client</h1>
+
+<%= if @live_action in [:edit] do %>
+  <%= live_modal FastHTTPWeb.ClientLive.FormComponent,
+    id: @client.id,
+    title: @page_title,
+    action: @live_action,
+    client: @client,
+    return_to: Routes.client_show_path(@socket, :show, @client) %>
+<% end %>
+
+<ul>
+
+  <li>
+    <strong>Name:</strong>
+    <%= @client.name %>
+  </li>
+
+  <li>
+    <strong>Notes:</strong>
+    <%= @client.notes %>
+  </li>
+
+</ul>
+
+<span><%= live_patch "Edit", to: Routes.client_show_path(@socket, :edit, @client), class: "button" %></span> |
+<span><%= live_redirect "Back", to: Routes.client_index_path(@socket, :index) %></span>

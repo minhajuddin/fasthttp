@@ -18,6 +18,13 @@ defmodule FastHTTPWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :index
+
+    live "/clients", ClientLive.Index, :index
+    live "/clients/new", ClientLive.Index, :new
+    live "/clients/:id/edit", ClientLive.Index, :edit
+
+    live "/clients/:id", ClientLive.Show, :show
+    live "/clients/:id/show/edit", ClientLive.Show, :edit
   end
 
   # Other scopes may use custom stacks.
