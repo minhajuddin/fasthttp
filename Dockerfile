@@ -4,7 +4,7 @@
 FROM hexpm/elixir:1.12.1-erlang-24.0.1-alpine-3.13.3 AS build
 
 # install build dependencies
-RUN apk add --no-cache build-base npm
+RUN apk add --no-cache build-base
 
 # prepare build dir
 WORKDIR /app
@@ -29,9 +29,6 @@ RUN mix deps.get --only prod && \
     mix deps.compile
 
 # install npm dependencies
-COPY assets/package.json assets/package-lock.json ./assets/
-RUN npm --prefix ./assets ci --progress=false --no-audit --loglevel=error
-
 COPY priv priv
 COPY assets assets
 
@@ -41,7 +38,6 @@ COPY assets assets
 # COPY lib lib
 
 # build assets
-RUN npm run --prefix ./assets deploy
 RUN mix phx.digest
 
 # copy source here if not using TailwindCSS
