@@ -14,6 +14,12 @@ defmodule FastHTTPWeb.Router do
     plug :accepts, ["json"]
   end
 
+  scope "/api/v1", FastHTTPWeb do
+    pipe_through :api
+
+    post "/requests", RequestController, :create
+  end
+
   scope "/", FastHTTPWeb do
     pipe_through :browser
 
