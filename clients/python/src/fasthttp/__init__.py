@@ -33,8 +33,8 @@ class Request:
     url: str
     # e.g. GET, POST, PUT, DELETE, QUERY
     method: str = "GET"
-    # e.g. [("content-type", "application/json"), ("accept", "text/html")]
-    headers: Headers = field(default_factory=list)
+    # e.g. {"content-type": "application/json", "accept": "text/html"}
+    headers: Headers = field(default_factory=dict)
     # e.g. b"name=danish&age=5"
     # e.g. b'{"name": "danish", "age": 5}'
     body: Body = None
@@ -59,6 +59,67 @@ class Request:
             return dict(type="base64", data=base64.standard_b64encode(body).decode())
         raise ValueError(f"Unsupported body type: {type(body)}")
 
+    def __repr__(self) -> str:
+        headers = "\n".join(f"{k}: {v}" for k, v in self.headers.items())
+        body_string = ""
+        if isinstance(self.body, str):
+            body_string = self.body
+        elif isinstance(self.body, bytes):
+            body_string = self.body.decode()
+
+        return "\n".join(
+            [f"{self.method} {self.url} HTTP/1.1or2", headers, body_string]
+        )
+
+
+@dataclass(frozen=True)
+class Response:
+    status_code: int
+    request: Request
+    headers: Headers
+    body: Body
+    id: uuid.UUID = field(
+        default_factory=uuid.uuid4
+    )  # TODO this should be from the server
+
+    def __repr__(self) -> str:
+        headers_str = "\n".join(f"{k}: {v}" for k, v in self.headers)
+        return "\n".join(["HTTP/1.1or2 {self.status_code}", headers_str, "", self.body])
+
+
+@dataclass(frozen=True)
+class TransportError:
+    request: Request
+    error_message: str
+    error_code: str
+
+    def __repr__(self) -> str:
+        return "\n".join(
+            [
+                "Error:",
+                f"error_code: {self.error_code}",
+                f"error_message: {self.error_message}",
+            ]
+        )
+
+
+def parse_response(response_json, request):
+    if response_json["type"] == "response":
+        return Response(
+            status_code=response_json["status_code"],
+            request=request,
+            headers=response_json["headers"],
+            body=response_json["body"],
+        )
+    elif response_json["type"] == "error":
+        return TransportError(
+            request=request,
+            error_message=response_json["error_message"],
+            error_code=response_json["error_code"],
+        )
+    else:
+        raise ValueError(f"Unsupported response type: {response_json['type']}")
+
 
 # Usage:
 # (get_user_response, create_order_response) = FastHTTP.send((
@@ -67,7 +128,6 @@ class Request:
 # ))
 def send(requests: List[Request]):
     # TODO: add idempotentcy
-    logging.info(msg="sending_requests", requests=requests)
     # TODO: add identitying tags and DD trace info to stitch things
 
     serialized_requests = json.dumps(
@@ -82,7 +142,12 @@ def send(requests: List[Request]):
 
     # TODO validate that response status is 200
 
-    responses = json.loads(resp.content)["responses"]
+    requests_dict = {str(x.id): x for x in requests}
+    responses = [
+        parse_response(r, requests_dict[r["id"]])
+        for r in json.loads(resp.content)["responses"]
+    ]
+    return responses
 
 
 def __httpbin_req(path, method="GET", headers={}, body=None):
@@ -108,18 +173,16 @@ if __name__ == "__main__":
         [
             __httpbin_req("/headers"),
             __httpbin_req("/ip"),
-            __httpbin_req("/delete", method="DELETE", body=b"name=danish&age=1"),
             __httpbin_req("/get?id=cool&name=danish"),
+            __httpbin_req("/delete", method="DELETE", body=b"name=danish&age=1"),
             __httpbin_req("/patch", method="PATCH", body=b"name=danish&age=2"),
             __httpbin_req("/post", method="POST", body=b"name=danish&age=3"),
             __httpbin_req("/put", method="PUT", body=b"name=danish&age=4"),
+            __httpbin_req("/status/200,300,401,402,500", method="GET"),
             __httpbin_req(
                 "/status/200,300,401,402,500",
                 method="DELETE",
                 body=b"name=danish&age=1",
-            ),
-            __httpbin_req(
-                "/status/200,300,401,402,500", method="GET", body=b"name=danish&age=1"
             ),
             __httpbin_req(
                 "/status/200,300,401,402,500", method="PATCH", body=b"name=danish&age=2"
@@ -130,26 +193,26 @@ if __name__ == "__main__":
             __httpbin_req(
                 "/status/200,300,401,402,500", method="PUT", body=b"name=danish&age=4"
             ),
-            Request(url="https://insta.com/v1/create_order", method="POST"),
-            Request(
-                url="https://insta.com/v1/create_order", method="POST", body=b"DOIT"
+            __httpbin_req(
+                "/status/200,300,401,402,500",
+                method="DELETE",
+                body="name=danish&age=1",
             ),
-            Request(
-                url="https://insta.com/v1/create_order",
-                method="POST",
-                body="what=something+cool",
+            __httpbin_req(
+                "/status/200,300,401,402,500", method="PATCH", body="name=danish&age=2"
             ),
+            __httpbin_req(
+                "/status/200,300,401,402,500", method="POST", body="name=danish&age=3"
+            ),
+            __httpbin_req(
+                "/status/200,300,401,402,500", method="PUT", body="name=danish&age=4"
+            ),
+            Request(url=f"https://dangnabbitfoobarbaz.com"),
         ]
     )
 
-    def print_headers(headers):
-        for k, v in headers:
-            print(f"{k}: {v}")
-
     for r in resps:
-        print("========================================")
-        print(r["status_code"])
-        print_headers(r["headers"])
-        print("")
-        print(r["body"])
-    print("--------------------")
+        print(">>>")
+        print(r.request)
+        print("<<<")
+        print(r)

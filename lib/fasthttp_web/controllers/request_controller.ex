@@ -2,35 +2,54 @@ defmodule FastHTTPWeb.RequestController do
   use FastHTTPWeb, :controller
   require Logger
 
-
   def create(conn, %{"requests" => requests} = _params) do
     Logger.info(log_code: "requests.create", requests: requests)
 
     # TODO: move this to a module
-    responses = requests
-    |> Enum.map(&process/1)
+    responses =
+      requests
+      |> Enum.map(&process/1)
 
-    send_resp(conn, :ok, Jason.encode!(%{
-      responses: responses
-    }))
+    send_resp(
+      conn,
+      :ok,
+      Jason.encode!(%{
+        responses: responses
+      })
+    )
   end
 
   defp process(request) do
-    req = Finch.build(
-      parse_method(request["method"]),
-      request["url"],
-      parse_headers(request["headers"]),
-      parse_body(request["body"]))
+    req =
+      Finch.build(
+        parse_method(request["method"]),
+        request["url"],
+        parse_headers(request["headers"]),
+        parse_body(request["body"])
+      )
 
-    # TODO handle errors
-    {:ok, resp} = Finch.request(req, FastHTTP.Pool)
-    IO.inspect(resp, label: "resp--------------------")
-    %{
-      id: request["id"],
-      status_code: resp.status,
-      headers: Enum.map(resp.headers, &:erlang.tuple_to_list/1),
-      body: resp.body
-    }
+    # TODO: retries
+    case Finch.request(req, FastHTTP.Pool) do
+      {:ok, resp} ->
+        IO.inspect(resp, label: "resp--------------------")
+
+        %{
+          id: request["id"],
+          # TODO: think of a better name for this
+          type: "response",
+          status_code: resp.status,
+          headers: Enum.map(resp.headers, &:erlang.tuple_to_list/1),
+          body: resp.body
+        }
+
+      {:error, %Mint.TransportError{} = error} ->
+        %{
+          id: request["id"],
+          type: "error",
+          error_code: "transport_error",
+          error_message: Exception.message(error)
+        }
+    end
   end
 
   defp parse_body(%{"type" => "empty"}), do: []
@@ -41,13 +60,12 @@ defmodule FastHTTPWeb.RequestController do
   # headers is a dict
   defp parse_headers(headers) do
     headers
-    |> Enum.to_list
+    |> Enum.to_list()
   end
-
 
   for method <- [:get, :post, :put, :patch, :delete, :head, :options, :trace, :connect] do
     @method method
-    @method_string (method |> to_string |> String.upcase)
+    @method_string method |> to_string |> String.upcase()
 
     defp parse_method(@method_string), do: @method
   end
