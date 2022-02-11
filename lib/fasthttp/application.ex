@@ -15,7 +15,11 @@ defmodule FastHTTP.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: FastHTTP.PubSub},
       # Start the Endpoint (http/https)
-      {Finch, name: FastHTTP.Pool},
+      {Finch,
+       name: FastHTTP.Pool,
+       pools: %{
+         default: [count: 10, size: 10]
+       }},
       FastHTTPWeb.Endpoint
       # Start a worker by calling: FastHTTP.Worker.start_link(arg)
       # {FastHTTP.Worker, arg}

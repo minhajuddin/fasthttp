@@ -1,0 +1,1 @@
+call "%~dp0\fasthttp" eval FastHTTP.Release.migrate

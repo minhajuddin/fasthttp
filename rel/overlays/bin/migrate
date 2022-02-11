@@ -1,0 +1,3 @@
+#!/bin/sh
+cd -P -- "$(dirname -- "$0")"
+exec ./fasthttp eval FastHTTP.Release.migrate
