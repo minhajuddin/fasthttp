@@ -68,7 +68,7 @@ defmodule FastHTTPWeb.Home.IndexLive do
 
         {%{
            request_count: length(responses),
-           total_time_ms: (responses |> Enum.map(& &1.meta.time_us) |> Enum.sum()) / 1000
+           total_time_ms: (responses |> Enum.map(& &1.meta.time_ms) |> Enum.sum()) / 1000
          }, responses}
 
       {:error, err} ->

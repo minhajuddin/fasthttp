@@ -21,7 +21,7 @@ defmodule FastHTTP.Executor do
     {time_us, resp} = :timer.tc(fn -> process(request) end)
 
     meta = %{
-      time_us: time_us
+      time_ms: time_us / 1000
     }
 
     Map.put(resp, :meta, meta)
