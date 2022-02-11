@@ -1,0 +1,29 @@
+<h1>The Executor</h1>
+
+<form action="#" method="post" phx-submit="execute" accept-charset="utf-8">
+  <textarea phx-name="requestor" name="requests" style="height: 300px" rows="20" cols="40"><%= @requests_json %></textarea>
+<h3>Meta</h3>
+<table>
+  <%= for {k,v} <- @meta do %>
+  <tr>
+    <td><%= k %></td>
+    <td><%= v %></td>
+  </tr>
+  <% end %>
+</table>
+<h3>Responses</h3>
+<pre>
+<%= for response <- @responses do %>
+# headers
+<%= inspect response.headers %>
+# meta
+<%= inspect response.meta %>
+
+# body
+<%= String.slice response.body, 0, 20 %>...
+
+# -----------------------------------------------------------------------------
+<% end %>
+</pre>
+<input type="submit" value="Execute It" />
+</form>

@@ -23,7 +23,8 @@ defmodule FastHTTPWeb.Router do
   scope "/", FastHTTPWeb do
     pipe_through :browser
 
-    get "/", PageController, :index
+    live "/", Home.IndexLive, :index
+    # get "/", PageController, :index
   end
 
   # Other scopes may use custom stacks.
