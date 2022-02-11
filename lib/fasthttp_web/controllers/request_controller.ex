@@ -2,13 +2,20 @@ defmodule FastHTTPWeb.RequestController do
   use FastHTTPWeb, :controller
   require Logger
 
+  # TODO: wire up telemetry to datadog
+
   def create(conn, %{"requests" => requests} = _params) do
     Logger.info(log_code: "requests.create", requests: requests)
 
     # TODO: move this to a module
     responses =
       requests
-      |> Enum.map(&process/1)
+      |> Enum.map(fn request ->
+        Task.Supervisor.async(FastHTTP.RequestTaskSupervisor, fn -> process_with_meta(request) end)
+      end)
+      |> Enum.map(fn task ->
+        Task.await(task)
+      end)
 
     send_resp(
       conn,
@@ -17,6 +24,17 @@ defmodule FastHTTPWeb.RequestController do
         responses: responses
       })
     )
+  end
+
+  # TODO: meta should be shoved into headers
+  defp process_with_meta(request) do
+    {time_us, resp} = :timer.tc(fn -> process(request) end)
+
+    meta = %{
+      time_us: time_us
+    }
+
+    Map.put(resp, :meta, meta)
   end
 
   defp process(request) do

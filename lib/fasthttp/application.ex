@@ -14,6 +14,7 @@ defmodule FastHTTP.Application do
       FastHTTPWeb.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: FastHTTP.PubSub},
+      {Task.Supervisor, name: FastHTTP.RequestTaskSupervisor},
       # Start the Endpoint (http/https)
       {Finch,
        name: FastHTTP.Pool,
@@ -24,6 +25,8 @@ defmodule FastHTTP.Application do
       # Start a worker by calling: FastHTTP.Worker.start_link(arg)
       # {FastHTTP.Worker, arg}
     ]
+
+    :ok = FastHTTP.Telemetry.StatsdReporter.connect()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

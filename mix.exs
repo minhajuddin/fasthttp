@@ -49,6 +49,7 @@ defmodule FastHTTP.MixProject do
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
       {:finch, "~> 0.10.2"},
+      {:statix, "~> 1.4"},
       {:plug_cowboy, "~> 2.5"}
     ]
   end

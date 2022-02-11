@@ -78,13 +78,17 @@ class Response:
     request: Request
     headers: Headers
     body: Body
+    meta: dict
     id: uuid.UUID = field(
         default_factory=uuid.uuid4
     )  # TODO this should be from the server
 
     def __repr__(self) -> str:
         headers_str = "\n".join(f"{k}: {v}" for k, v in self.headers)
-        return "\n".join(["HTTP/1.1or2 {self.status_code}", headers_str, "", self.body])
+        meta_str = "\n".join(f"{k}: {v}" for k, v in self.meta.items())
+        return "\n".join(
+            ["HTTP/1.1or2 {self.status_code}", headers_str, "", meta_str, "", self.body]
+        )
 
 
 @dataclass(frozen=True)
@@ -108,6 +112,7 @@ def parse_response(response_json, request):
         return Response(
             status_code=response_json["status_code"],
             request=request,
+            meta=response_json["meta"],
             headers=response_json["headers"],
             body=response_json["body"],
         )
@@ -169,47 +174,50 @@ def __httpbin_req(path, method="GET", headers={}, body=None):
 
 
 if __name__ == "__main__":
-    resps = send(
-        [
-            __httpbin_req("/headers"),
-            __httpbin_req("/ip"),
-            __httpbin_req("/get?id=cool&name=danish"),
-            __httpbin_req("/delete", method="DELETE", body=b"name=danish&age=1"),
-            __httpbin_req("/patch", method="PATCH", body=b"name=danish&age=2"),
-            __httpbin_req("/post", method="POST", body=b"name=danish&age=3"),
-            __httpbin_req("/put", method="PUT", body=b"name=danish&age=4"),
-            __httpbin_req("/status/200,300,401,402,500", method="GET"),
-            __httpbin_req(
-                "/status/200,300,401,402,500",
-                method="DELETE",
-                body=b"name=danish&age=1",
-            ),
-            __httpbin_req(
-                "/status/200,300,401,402,500", method="PATCH", body=b"name=danish&age=2"
-            ),
-            __httpbin_req(
-                "/status/200,300,401,402,500", method="POST", body=b"name=danish&age=3"
-            ),
-            __httpbin_req(
-                "/status/200,300,401,402,500", method="PUT", body=b"name=danish&age=4"
-            ),
-            __httpbin_req(
-                "/status/200,300,401,402,500",
-                method="DELETE",
-                body="name=danish&age=1",
-            ),
-            __httpbin_req(
-                "/status/200,300,401,402,500", method="PATCH", body="name=danish&age=2"
-            ),
-            __httpbin_req(
-                "/status/200,300,401,402,500", method="POST", body="name=danish&age=3"
-            ),
-            __httpbin_req(
-                "/status/200,300,401,402,500", method="PUT", body="name=danish&age=4"
-            ),
-            Request(url=f"https://dangnabbitfoobarbaz.com"),
-        ]
-    )
+    reqs = [
+        __httpbin_req("/headers"),
+        __httpbin_req("/ip"),
+        __httpbin_req("/get?id=cool&name=danish"),
+        __httpbin_req("/delete", method="DELETE", body=b"name=danish&age=1"),
+        __httpbin_req("/patch", method="PATCH", body=b"name=danish&age=2"),
+        __httpbin_req("/post", method="POST", body=b"name=danish&age=3"),
+        __httpbin_req("/put", method="PUT", body=b"name=danish&age=4"),
+        __httpbin_req("/status/200,300,401,402,500", method="GET"),
+        __httpbin_req(
+            "/status/200,300,401,402,500",
+            method="DELETE",
+            body=b"name=danish&age=1",
+        ),
+        __httpbin_req(
+            "/status/200,300,401,402,500", method="PATCH", body=b"name=danish&age=2"
+        ),
+        __httpbin_req(
+            "/status/200,300,401,402,500", method="POST", body=b"name=danish&age=3"
+        ),
+        __httpbin_req(
+            "/status/200,300,401,402,500", method="PUT", body=b"name=danish&age=4"
+        ),
+        __httpbin_req(
+            "/status/200,300,401,402,500",
+            method="DELETE",
+            body="name=danish&age=1",
+        ),
+        __httpbin_req(
+            "/status/200,300,401,402,500", method="PATCH", body="name=danish&age=2"
+        ),
+        __httpbin_req(
+            "/status/200,300,401,402,500", method="POST", body="name=danish&age=3"
+        ),
+        __httpbin_req(
+            "/status/200,300,401,402,500", method="PUT", body="name=danish&age=4"
+        ),
+        Request(url=f"https://dangnabbitfoobarbaz.com"),
+    ]
+    reqs = reqs * 5
+    print("****************************************")
+    print(f"Sending requests {len(reqs)}...")
+    print("****************************************")
+    resps = send(reqs)
 
     for r in resps:
         print(">>>")
