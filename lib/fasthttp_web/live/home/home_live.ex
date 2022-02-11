@@ -53,11 +53,20 @@ defmodule FastHTTPWeb.Home.IndexLive do
   def handle_event("execute", %{"requests" => requests_json}, socket) do
     {real_time_us, {meta, responses}} = :timer.tc(fn -> execute(requests_json) end)
 
+    real_time_ms = real_time_us / 1000
+
+    time_saved_percentage =
+      round(100_00 * ((meta.total_time_ms - real_time_ms) / meta.total_time_ms)) / 100
+
     {:noreply,
      assign(socket,
        responses: responses,
        requests_json: requests_json,
-       meta: Map.put(meta, :real_time_ms, real_time_us / 1000)
+       meta:
+         Map.merge(meta, %{
+           real_time_ms: real_time_ms,
+           time_saved_percentage: time_saved_percentage
+         })
      )}
   end
 
@@ -65,10 +74,11 @@ defmodule FastHTTPWeb.Home.IndexLive do
     case Jason.decode(requests_json) do
       {:ok, requests} ->
         responses = FastHTTP.Executor.execute(requests)
+        total_time_ms = responses |> Enum.map(& &1.meta.time_ms) |> Enum.sum()
 
         {%{
            request_count: length(responses),
-           total_time_ms: (responses |> Enum.map(& &1.meta.time_ms) |> Enum.sum()) / 1000
+           total_time_ms: total_time_ms
          }, responses}
 
       {:error, err} ->
