@@ -1,12 +1,17 @@
-# fly.toml file generated for fasthttp on 2022-02-10T23:22:29-05:00
+# fly.toml file generated for fasthttp on 2022-02-10T23:34:17-05:00
 
 app = "fasthttp"
 
-kill_signal = "SIGINT"
+kill_signal = "SIGTERM"
 kill_timeout = 5
 processes = []
 
+[deploy]
+  release_command = "/app/bin/migrate"
+
 [env]
+  PHX_HOST = "fasthttp.fly.dev"
+  PORT = "8080"
 
 [experimental]
   allowed_public_ports = []
